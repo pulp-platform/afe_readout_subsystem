@@ -1,4 +1,7 @@
 afe_readout_subsystem:
+  vlog_opts: [
+    "-L vivopulp_lib"
+  ]
   files: [
     rtl/adc_reg_if_type0.sv,
     rtl/adc_reg_if_type1.sv,
