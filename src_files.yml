@@ -1,18 +1,16 @@
 afe_readout_subsystem:
+  vlog_opts: [
+    "-L vivopulp_lib"
+  ]
   files: [
-    rtl/adc_reg_if_type0.sv,
-    rtl/adc_reg_if_type1.sv,
-    rtl/adc_reg_if_type2.sv,
-    rtl/afe_ro_conf.sv,
-    rtl/adc_sync_if.sv,
-    rtl/afe_buf_addr_gen.sv,
-    rtl/afe_l2_addr_gen.sv,
-    rtl/afe_l2_addr_gen_type1.sv,
-    rtl/adc_top_type0.sv,
-    rtl/adc_top_type1.sv,
-    rtl/adc_top_type2.sv,
-    rtl/rr_arbiter.sv,
-    rtl/afe_udma_if.sv,
-    rtl/sram_buffer.sv,
+    rtl/afe_reg_if.sv,
+    rtl/afe_ro_arbiter.sv,
+    rtl/afe_ro_conf_if.sv,
+    rtl/afe_sync_if.sv,
+    rtl/afe_buff_addrgen.sv,
+    rtl/afe_l2_addrgen.sv,
+    rtl/afe_top.sv,
+    rtl/afe_ro_udma_if.sv,
+    rtl/afe_ro_sram_buffer.sv,
     rtl/afe_readout_subsystem.sv,
   ]
