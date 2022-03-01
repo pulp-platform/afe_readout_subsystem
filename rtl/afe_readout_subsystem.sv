@@ -49,6 +49,7 @@ module afe_readout_subsystem
   /* events */
   output logic            [AFE_RX_NUM_L2CH_TOT-1:0] l2_event_o,
   output logic                     [NUM_AFE_RX-1:0] buff_event_o,
+  output logic                     [NUM_AFE_RX-1:0] flag_event_o,
 
   /* AFE data and async valid */
   input  logic [NUM_AFE_RX-1:0]                     afe_data_valid_i,
@@ -82,7 +83,7 @@ module afe_readout_subsystem
   logic [NUM_AFE_RX-1:0] buff_wr_ready;
   logic [NUM_AFE_RX-1:0] buff_rd_ready, buff_rd_valid;
 
-  logic [NUM_AFE_RX-1:0][BUFF_AWIDTH-1:0] buff_waddr, buff_raddr;
+  logic [NUM_AFE_RX-1:0]   [BUFF_AWIDTH-1:0] buff_waddr, buff_raddr;
 
   /* L2 write channel */
   logic [NUM_AFE_RX-1:0][L2_AWIDTH_NOAL-1:0] l2_addr;
@@ -163,6 +164,7 @@ module afe_readout_subsystem
 
       .l2_ch_event_o     ( l2_event_o[AFE_RX_OFFS_L2CH[I] +: AFE_RX_NUM_L2CHS[I]] ),
       .buff_event_o      ( buff_event_o[I]      ),
+      .flag_event_o      ( flag_event_o[I]      ),
 
       .buff_waddr_o      ( buff_waddr[I]        ),
       .buff_raddr_o      ( buff_raddr[I]        ),

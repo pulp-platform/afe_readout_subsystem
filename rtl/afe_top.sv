@@ -46,6 +46,7 @@ module afe_top #(
 
   output logic       [L2_NUM_CHS-1:0] l2_ch_event_o,
   output logic                        buff_event_o,
+  output logic                        flag_event_o,
 
   output logic      [BUFF_AWIDTH-1:0] buff_waddr_o,
   output logic      [BUFF_AWIDTH-1:0] buff_raddr_o,
@@ -73,6 +74,8 @@ module afe_top #(
   input  logic                        afe_valid_async_i,
   input  logic   [AFE_DATA_WIDTH-1:0] afe_data_async_i
 );
+
+  localparam FLAG_CNT_WIDTH = 6;
 
   // L2 channels
   logic [L2_NUM_CHS-1:0]   [L2_AWIDTH_NOAL-1:0] l2_ch_startaddr;
@@ -118,6 +121,13 @@ module afe_top #(
   logic  [AFE_FLAG_WIDTH-1:0] flag_mask;
   logic                [31:0] flag_data_q, flag_data_n;
   logic                       flag_valid_q, flag_valid_n;
+  logic                       flag_tf_valid;
+
+  logic                         flag_event_clr;
+  logic                         flag_event_q, flag_event_n;
+  logic    [FLAG_CNT_WIDTH-1:0] flag_cnt_q, flag_cnt_n;
+  enum logic {IDLE, TRIGGERED}  flag_state_q, flag_state_n;
+
 
   /* extracted data and meta fields of afe data */
   logic      [AFE_PL_WIDTH-1:0] rdata_payload;
@@ -127,11 +137,12 @@ module afe_top #(
 
 
   /* assignments */
-  assign buff_waddr_o = buff_wr_addr;
-  assign buff_raddr_o = buff_rd_addr;
+  assign buff_waddr_o  = buff_wr_addr;
+  assign buff_raddr_o  = buff_rd_addr;
 
-  assign flag_valid_o = flag_valid_q;
-  assign flag_data_o  = flag_data_q;
+  assign flag_valid_o  = flag_valid_q;
+  assign flag_data_o   = flag_data_q;
+  assign flag_event_o  = flag_event_q;
 
   assign rdata_payload = buff_rvalid_i ? buff_rdata_i[0            +: AFE_PL_WIDTH]   : 0;
   assign rdata_chid    = buff_rvalid_i ? buff_rdata_i[AFE_CHID_LSB +: AFE_CHID_WIDTH] : 0;
@@ -152,7 +163,7 @@ module afe_top #(
     2: assign l2_addr_o = buff_rvalid_i ? l2_ch_curr_addr[l2_ch_chid_match]                                        : 32'hBADACCE5;
     3: assign l2_addr_o = buff_rvalid_i ? l2_ch_curr_addr[l2_ch_chid_match] + rdata_subchid*l2_ch_size[rdata_chid] : 32'hBADACCE5;
   
-    default: assign l2_addr_o = 32'hbADACCE5;
+    default: assign l2_addr_o = 32'hBADACCE5;
   endcase
 
   if ((AFE_RX_TYPE == 2) || (AFE_RX_TYPE == 3)) begin
@@ -193,8 +204,11 @@ module afe_top #(
     end
   end
 
+
   /* flag generation */
   if (FEATURE_FLAG) begin
+    assign flag_tf_valid = flag_valid_q & flag_ready_i;
+
     always_comb begin
       flag_valid_n = flag_valid_q;
       flag_data_n  = flag_data_q;
@@ -213,10 +227,45 @@ module afe_top #(
         flag_valid_n = 1'b0;
       end
     end
+
+    always_comb begin
+      flag_state_n = flag_state_q;
+      flag_event_n = 1'b0;
+      flag_cnt_n   = flag_cnt_q;
+
+      case(flag_state_q)
+        IDLE: begin
+          if (flag_tf_valid) begin
+            flag_event_n = 1'b1;
+            flag_cnt_n   = 'd1;
+            flag_state_n = TRIGGERED;
+          end
+        end
+
+        TRIGGERED: begin
+          if (flag_event_clr & ~flag_tf_valid) begin
+            flag_cnt_n   = '0;
+            flag_state_n = IDLE;
+          end
+          else if (flag_event_clr & flag_tf_valid) begin
+            flag_cnt_n   = 'd1;
+            flag_event_n = 1'b1;
+          end
+          else if (flag_tf_valid) begin
+            flag_cnt_n   = (flag_cnt_q == '1) ? '0 : flag_cnt_q + 1;
+          end
+        end
+      endcase
+    end
   end
   else begin
-    assign flag_valid_n = 1'b0;
-    assign flag_data_n  = '0;
+    /* dummy assignments if flag feature not present */
+    assign flag_tf_valid = 1'b0;
+    assign flag_valid_n  = 1'b0;
+    assign flag_data_n   = '0;
+    assign flag_cnt_n    = '0;
+    assign flag_event_n  = 1'b0;
+    assign flag_state_n  = IDLE;
   end
 
 
@@ -257,7 +306,8 @@ module afe_top #(
     .AFE_SUBCHID_WIDTH ( AFE_SUBCHID_WIDTH ),
     .AFE_FLAG_WIDTH    ( AFE_FLAG_WIDTH    ),
     .BUFF_AWIDTH       ( BUFF_AWIDTH       ),
-    .BUFF_TRANS_SIZE   ( BUFF_TRANS_SIZE   )
+    .BUFF_TRANS_SIZE   ( BUFF_TRANS_SIZE   ),
+    .FLAG_CNT_WIDTH    ( FLAG_CNT_WIDTH    )
   )
   afe_reg_if_i (
     .clk_i,
@@ -271,9 +321,12 @@ module afe_top #(
     .cfg_rdata_o,
     .cfg_ready_o,
 
+    // Flag configuration and control
     .cfg_flag_en_o         ( flag_en          ),
     .cfg_flag_mask_o       ( flag_mask        ),
     .cfg_flag_data_i       ( flag_data_q      ),
+    .cfg_flag_cnt_i        ( flag_cnt_q       ),
+    .cfg_flag_clr_o        ( flag_event_clr   ),
 
     // L2 channels configuration and status
     .cfg_l2_startaddr_o    ( l2_ch_startaddr  ),
@@ -301,7 +354,7 @@ module afe_top #(
     .cfg_buff_curr_raddr_i ( buff_rd_addr     ),
     .cfg_buff_bytes_left_i ( buff_bytes_left  ),
 
-    // Flag and misc control and config
+    // Misc control and config
     .cfg_afe_ch_mask_o     ( afe_ch_mask      ),
     .cfg_afe_ch_en_mode_o  ( afe_ch_en_mode   ),
     .cfg_afe_ch_en_chid_o  ( afe_ch_en_chid   ),
@@ -381,10 +434,20 @@ module afe_top #(
     if(~rst_ni) begin
       flag_valid_q <= 1'b0;
       flag_data_q  <= '0;
+      flag_cnt_q   <= '0;
+      flag_event_q <= 1'b0;
+      flag_state_q <= IDLE;
     end
     else begin
       flag_valid_q <= flag_valid_n;
-      flag_data_q  <= flag_data_n;
+      flag_event_q <= flag_event_n;
+      flag_state_q <= flag_state_n;
+
+      if (1)
+        flag_cnt_q   <= flag_cnt_n;
+
+      if (flag_valid_n)
+        flag_data_q  <= flag_data_n;
     end
   end
 

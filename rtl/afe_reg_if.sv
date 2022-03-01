@@ -33,18 +33,20 @@
 `define REG_UNUSED0     4'b1011 //GEN_BASEADDR+0x2C
 `define REG_FLAGS_CFG   4'b1100 //GEN_BASEADDR+0x30
 `define REG_FLAGS_DATA  4'b1101 //GEN_BASEADDR+0x34
+`define REG_FLAGS_CNT   4'b1110 //GEN_BASEADDR+0x38
 
 module afe_reg_if #(
   parameter AFE_RX_TYPE       = 0,
-  parameter L2_AWIDTH_NOAL    = 12,
-  parameter L2_TRANS_SIZE     = 16,
-  parameter L2_NUM_CHS        = 8,
   parameter AFE_NUM_CHS       = 8,
   parameter AFE_CHID_WIDTH    = 4,
   parameter AFE_SUBCHID_WIDTH = 2,
   parameter AFE_FLAG_WIDTH    = 4,
   parameter BUFF_AWIDTH       = 10,
-  parameter BUFF_TRANS_SIZE   = 10
+  parameter BUFF_TRANS_SIZE   = 10,
+  parameter L2_AWIDTH_NOAL    = 12,
+  parameter L2_TRANS_SIZE     = 16,
+  parameter L2_NUM_CHS        = 8,
+  parameter FLAG_CNT_WIDTH    = 8
 ) (
   input  logic                       clk_i,
   input  logic                       rst_ni,
@@ -60,6 +62,8 @@ module afe_reg_if #(
   output logic                       cfg_flag_en_o,
   output logic  [AFE_FLAG_WIDTH-1:0] cfg_flag_mask_o,
   input  logic                [31:0] cfg_flag_data_i,
+  input  logic  [FLAG_CNT_WIDTH-1:0] cfg_flag_cnt_i,
+  output logic                       cfg_flag_clr_o,
 
   // buffer configuration signals
   output logic     [BUFF_AWIDTH-1:0] cfg_buff_startaddr_o,
@@ -252,7 +256,8 @@ module afe_reg_if #(
 
   /* read decoder */
   always_comb begin
-    cfg_rdata_o = '0;
+    cfg_rdata_o    = '0;
+    cfg_flag_clr_o = 1'b0;
 
     // address space at top for generic and buffer config
     if (s_ch_sel_r[4:1] == 4'b1111) begin
@@ -283,6 +288,10 @@ module afe_reg_if #(
           cfg_rdata_o = {{(24-AFE_FLAG_WIDTH){1'b0}},r_flag_mask,7'h0,r_flag_en};
         `REG_FLAGS_DATA:
           cfg_rdata_o = cfg_flag_data_i;
+        `REG_FLAGS_CNT: begin
+          cfg_rdata_o[FLAG_CNT_WIDTH-1:0]  = cfg_flag_cnt_i;
+          cfg_flag_clr_o = 1'b1;
+        end
 
         default:
           cfg_rdata_o = '0;
