@@ -244,7 +244,7 @@ module afe_reg_if #(
               r_l2_continuous[s_ch_sel_w]  <= cfg_wdata_i[0];
               if ((AFE_RX_TYPE == 1) || (AFE_RX_TYPE == 3))
                 r_l2_subchid[s_ch_sel_w]   <= cfg_wdata_i[16 +: AFE_SUBCHID_WIDTH];
-              else if ((AFE_RX_TYPE == 2) || (AFE_RX_TYPE == 3))
+              if ((AFE_RX_TYPE == 2) || (AFE_RX_TYPE == 3))
                 r_l2_chid[s_ch_sel_w]      <= cfg_wdata_i[24 +: AFE_CHID_WIDTH];
             end
           endcase
