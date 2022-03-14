@@ -66,6 +66,7 @@ module afe_readout_subsystem
   
   logic [NUM_AFE_RX-1:0]       afe_top_clk;
   logic                        udma_shutdown;
+  logic                        intf_shtdwn_ok;
 
   /* buffer */
   logic [AFE_DATA_WIDTH-1:0] buff_rdata;
@@ -154,6 +155,8 @@ module afe_readout_subsystem
       .clk_i             ( afe_top_clk[I]       ),
       .rst_ni,
       .test_mode_i,
+
+      .intf_shtdwn_i     ( intf_shtdwn_ok       ),
   
       .cfg_addr_i        ( cfg_addr             ),
       .cfg_wdata_i       ( cfg_wdata            ),
@@ -242,6 +245,8 @@ module afe_readout_subsystem
     .clk_i,
     .rst_ni,
     .test_mode_i,
+
+    .shtdwn_ok_o     ( intf_shtdwn_ok     ),
 
     .afero_valid_i   ( intf_valid         ),
     .afero_ready_o   ( intf_ready         ),

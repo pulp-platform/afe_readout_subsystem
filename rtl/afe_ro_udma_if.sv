@@ -28,6 +28,7 @@ module afe_ro_udma_if
   input  logic                [1:0] afero_size_i,
 
   input  logic                      udma_shtdwn_i,
+  output logic                      shtdwn_ok_o,
 
   input  logic                      udma_ready_i,
   output logic                      udma_valid_o,
@@ -49,6 +50,8 @@ module afe_ro_udma_if
   assign udma_valid_o  = ~fifo_empty;
 
   assign fifo_pop = udma_valid_o & udma_ready_i;
+
+  assign shtdwn_ok_o = udma_shtdwn_i && (state_q == IDLE);
 
   fifo_v3 #(
     .DATA_WIDTH ( L2_DATA_WIDTH + L2_AWIDTH_NOAL + 2 ),

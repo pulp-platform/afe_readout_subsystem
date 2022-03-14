@@ -102,8 +102,8 @@ module afe_l2_addrgen #(
       end
       else if (transfer_valid_i) begin
         /* regular transfer, update counter and address*/
-        cnt_n     = cnt_q      - datasize_incr;
-        address_n = address_q  + datasize_incr;
+        cnt_n     = cnt_q     - datasize_incr;
+        address_n = address_q + datasize_incr;
       end
     end
   end

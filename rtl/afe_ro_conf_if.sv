@@ -124,7 +124,7 @@ module afe_ro_conf_if #(
   for (genvar I=0; I<NUM_AFE; I++) begin : AFE_TOP_CG
     pulp_clock_gating afe_top_cg_i
     (
-      .clk_i     ( clk_i            ),
+      .clk_i,
       .en_i      ( r_afe_cg[I]      ),
       .test_en_i ( test_mode_i      ),
       .clk_o     ( afe_top_clk_o[I] )

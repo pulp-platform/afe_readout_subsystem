@@ -35,7 +35,9 @@ module afe_top #(
 ) (
   input  logic                        clk_i,      
   input  logic                        rst_ni,
-  inout  logic                        test_mode_i,
+  input  logic                        test_mode_i,
+
+  input  logic                        intf_shtdwn_i,
 
   input  logic                 [31:0] cfg_wdata_i,
   input  logic                 [10:0] cfg_addr_i,
@@ -92,7 +94,7 @@ module afe_top #(
   logic [L2_NUM_CHS-1:0]    [L2_TRANS_SIZE-1:0] l2_ch_bytes_left;
 
   logic [L2_NUM_CHS-1:0]                        l2_ch_tf_valid;
-  /* for type 2 only */
+  /* for types 2 and 3 only */
   logic [$clog2(AFE_NUM_CHS)-1:0]               l2_ch_chid_match;
 
   // Buffer
@@ -115,6 +117,9 @@ module afe_top #(
 
   // includes sign extension
   logic                 [1:0] data_mask_mode;
+
+  // clock gating of l2 channels
+  logic                       clk_l2_side;
 
   // Flags
   logic                       flag_en;
@@ -377,7 +382,7 @@ module afe_top #(
       .TRANS_SIZE   ( L2_TRANS_SIZE  )
     ) 
     afe_l2_addrgen_i (
-      .clk_i,
+      .clk_i             ( clk_l2_side         ),
       .rst_ni,
       .test_mode_i,
 
@@ -430,6 +435,15 @@ module afe_top #(
   );
 
 
+  pulp_clock_gating l2_side_cg_i
+  (
+    .clk_i,
+    .en_i      ( ~intf_shtdwn_i ),
+    .test_en_i ( test_mode_i    ),
+    .clk_o     ( clk_l2_side    )
+  );
+
+
   always_ff @(posedge clk_i, negedge rst_ni) begin
     if(~rst_ni) begin
       flag_valid_q <= 1'b0;
@@ -443,7 +457,7 @@ module afe_top #(
       flag_event_q <= flag_event_n;
       flag_state_q <= flag_state_n;
 
-      if (1)
+      if (flag_tf_valid | flag_event_clr)
         flag_cnt_q   <= flag_cnt_n;
 
       if (flag_valid_n)
