@@ -211,6 +211,9 @@ module afe_top #(
 
 
   /* flag generation */
+  localparam FLAG_SUBCHID_LSB = 24 + AFE_CHID_WIDTH;
+  localparam FLAG_SUBCHID_MSB = FLAG_SUBCHID_LSB + AFE_SUBCHID_WIDTH - 1;
+
   if (FEATURE_FLAG) begin
     assign flag_tf_valid = flag_valid_q & flag_ready_i;
 
@@ -219,7 +222,9 @@ module afe_top #(
       flag_data_n  = flag_data_q;
 
       if (flag_en & |(rdata_flags & flag_mask)) begin
-        flag_data_n[31  : 24+AFE_CHID_WIDTH] = '0;
+        flag_data_n[31  : FLAG_SUBCHID_MSB+1]          = '0;
+        flag_data_n[FLAG_SUBCHID_MSB:FLAG_SUBCHID_LSB] = rdata_subchid;
+
         flag_data_n[24 +: AFE_CHID_WIDTH]    = rdata_chid;
         flag_data_n[23  : 16+AFE_FLAG_WIDTH] = '0;
         flag_data_n[16 +: AFE_FLAG_WIDTH]    = rdata_flags;
