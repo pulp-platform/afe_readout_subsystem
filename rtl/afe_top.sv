@@ -229,7 +229,7 @@ module afe_top #(
         flag_data_n[23  : 16+AFE_FLAG_WIDTH] = '0;
         flag_data_n[16 +: AFE_FLAG_WIDTH]    = rdata_flags;
         flag_data_n[15  : L2_TRANS_SIZE]     = '0;
-        flag_data_n[0  +: L2_TRANS_SIZE]     = l2_ch_wr_ptr[rdata_chid];
+        flag_data_n[0  +: L2_TRANS_SIZE]     = ((AFE_RX_TYPE == 2) || (AFE_RX_TYPE == 3)) ? l2_ch_wr_ptr[l2_ch_chid_match] : l2_ch_wr_ptr[rdata_chid];
 
         flag_valid_n = 1'b1;
       end
