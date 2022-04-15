@@ -18,11 +18,16 @@ module afe_readout_subsystem
   parameter L2_AWIDTH_NOAL  = 12,
   parameter BUFF_AWIDTH     = 10,
   parameter BUFF_TRANS_SIZE = 16,
+  parameter BUFF_BIST_EN    = 0,
   parameter AFE_DATA_WIDTH  = 32
 )(
   input  logic     clk_i,
   input  logic     rst_ni,
   input  logic     test_mode_i,
+
+  input  logic     buff_bist_en_i,
+  output logic     buff_bist_done_o,
+  output logic     buff_bist_fail_o,
 
   /* APB interface for configuration */
   input  logic                        apb_sel_i,
@@ -261,15 +266,21 @@ module afe_readout_subsystem
 
   afe_ro_sram_buffer #(
     .AFE_DATA_WIDTH ( AFE_DATA_WIDTH ),
-    .ADDR_WIDTH     ( BUFF_AWIDTH    )
+    .ADDR_WIDTH     ( BUFF_AWIDTH    ),
+    .BIST_EN        ( BUFF_BIST_EN   )
   ) buffer_i (
     .clk_i,
+    .rst_ni,
 
-    .cen_i  ( buff_cen   ),
-    .wen_i  ( buff_wen   ),
-    .data_i ( buff_wdata ),
-    .addr_i ( buff_addr  ),
-    .data_o ( buff_rdata )
+    .bist_en_i   ( buff_bist_en_i   ),
+    .bist_done_o ( buff_bist_done_o ),
+    .bist_fail_o ( buff_bist_fail_o ),
+
+    .cen_i       ( buff_cen         ),
+    .wen_i       ( buff_wen         ),
+    .data_i      ( buff_wdata       ),
+    .addr_i      ( buff_addr        ),
+    .data_o      ( buff_rdata       )
   );
 
 endmodule
