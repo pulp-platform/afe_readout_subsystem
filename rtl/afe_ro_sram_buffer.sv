@@ -34,6 +34,9 @@ module afe_ro_sram_buffer #(
   logic           [31:0] rdata; // sram data output 
   logic           [31:0] wdata; // sram data input
 
+  logic            [1:0] bist_en_q;
+  logic                  bist_en_sync;
+
   logic                  bist_wr_en, bist_rd_en, bist_cen;
   logic           [31:0] bist_wdata;
   logic [ADDR_WIDTH-1:0] bist_waddr;
@@ -47,16 +50,27 @@ module afe_ro_sram_buffer #(
   assign bist_cen  = ~(bist_wr_en | bist_rd_en);
   assign bist_addr = bist_wr_en ? bist_waddr : bist_raddr;
 
+  assign bist_en_sync = bist_en_q[1];
+
+  always_ff @(posedge clk_i, negedge rst_ni) begin
+    if(~rst_ni) begin
+      bist_en_q <= '0;
+    end
+    else begin
+      bist_en_q <= {bist_en_q[0], bist_en_i};
+    end
+  end
+
   sram_wrapper_32b #(
     .ADDR_WIDTH ( ADDR_WIDTH )
   ) sram_i (
     .clk_i   ( clk_i ),
     .rdata_o ( rdata ),
-    .wdata_i ( bist_en_i ? bist_wdata  : wdata  ),
-    .ce_ni   ( bist_en_i ? bist_cen    : cen_i  ),
-    .we_ni   ( bist_en_i ? ~bist_wr_en : wen_i  ),
+    .wdata_i ( bist_en_sync ? bist_wdata  : wdata  ),
+    .ce_ni   ( bist_en_sync ? bist_cen    : cen_i  ),
+    .we_ni   ( bist_en_sync ? ~bist_wr_en : wen_i  ),
     .bwe_ni  ( bwen  ),
-    .addr_i  ( bist_en_i ? bist_addr   : addr_i )
+    .addr_i  ( bist_en_sync ? bist_addr   : addr_i )
   );
 
 
@@ -70,16 +84,16 @@ module afe_ro_sram_buffer #(
       .clk_i,
       .rst_ni,
       
-      .en_i      ( bist_en_i   ),
-      .done_o    ( bist_done_o ),
-      .fail_o    ( bist_fail_o ),
+      .en_i      ( bist_en_sync ),
+      .done_o    ( bist_done_o  ),
+      .fail_o    ( bist_fail_o  ),
   
-      .wr_en_o   ( bist_wr_en  ),
-      .rd_en_o   ( bist_rd_en  ),
-      .wr_data_o ( bist_wdata  ),
-      .rd_data_i ( rdata       ),
-      .wr_addr_o ( bist_waddr  ),
-      .rd_addr_o ( bist_raddr  )
+      .wr_en_o   ( bist_wr_en   ),
+      .rd_en_o   ( bist_rd_en   ),
+      .wr_data_o ( bist_wdata   ),
+      .rd_data_i ( rdata        ),
+      .wr_addr_o ( bist_waddr   ),
+      .rd_addr_o ( bist_raddr   )
     );
   end
   else begin : BIST_NOGEN
