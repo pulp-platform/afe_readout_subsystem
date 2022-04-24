@@ -276,6 +276,7 @@ module afe_readout_subsystem
   ) buffer_i (
     .clk_i,
     .rst_ni,
+    .test_mode_i,
 
     .bist_en_i   ( buff_bist_en_i   ),
     .bist_done_o ( buff_bist_done_o ),

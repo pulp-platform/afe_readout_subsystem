@@ -242,10 +242,16 @@ module afe_reg_if #(
               r_l2_en[s_ch_sel_w]          <= cfg_wdata_i[4];
               r_l2_datasize[s_ch_sel_w]    <= cfg_wdata_i[2:1];
               r_l2_continuous[s_ch_sel_w]  <= cfg_wdata_i[0];
+
               if ((AFE_RX_TYPE == 1) || (AFE_RX_TYPE == 3))
                 r_l2_subchid[s_ch_sel_w]   <= cfg_wdata_i[16 +: AFE_SUBCHID_WIDTH];
+              else
+                r_l2_subchid               <= '0;
+
               if ((AFE_RX_TYPE == 2) || (AFE_RX_TYPE == 3))
                 r_l2_chid[s_ch_sel_w]      <= cfg_wdata_i[24 +: AFE_CHID_WIDTH];
+              else
+                r_l2_chid                  <= '0;
             end
           endcase
         end
